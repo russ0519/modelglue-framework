@@ -257,7 +257,7 @@
 	<cfset var ehNode = "" />
 	
 	<!--- Get all event handlers --->
-	<cflog text="#eventName#" />
+	
 	<cffile action="read" file="#targetFile#" variable="xmlString" />
 	
 	<cftry>
