@@ -17,9 +17,6 @@
 		<broadcasts>
 			<message name="modelglue.modulesLoaded" />
 		</broadcasts>
-		<results>
-			<result name="configurationInvalidated" do="modelglue.readyForModuleLoading" />
-		</results>
 	</event-handler>
 </event-handlers>
 	

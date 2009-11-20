@@ -5,12 +5,10 @@
 	
 	<cfset var eventName = arguments.event.getValue(arguments.event.getValue("eventValue")) />
 	
-	<cfif not getModelGlue().hasEventHandler(eventName) and getModelGlue().getConfigSetting("generationEnabled")>
+	<cfif getModelGlue().getConfigSetting("generationEnabled") and not beans.modelglueEventGenerator.hasEventHandler(eventName)>
 		<cfset event.addTraceStatement("Event Generation", "Generating ""#eventName#""") />
 		
 		<cfset beans.modelglueEventGenerator.generateEvent(arguments.event) />
-		
-		<cfset arguments.event.addResult("configurationInvalidated") />
 	</cfif>
 </cffunction>
 

@@ -471,7 +471,7 @@
 	<cfset var urlpathdestination = "#path#/ForwardToUrlDestination.cfm?msg=#msg#" />
 	<cfhttp url="#path#ForwardToUrlEndpoint.cfm?url=#urlEncodedFormat(urlpathdestination)#"  />
 	<!--- todo: Find a better way to test this because this method is fragile and sucks --->
-	<cfset assertTrue(cfhttp.fileContent eq msg, 'File content not message! Expected #msg#, got #cfhttp.filecontent#') />
+	<cfset assertTrue(trim(cfhttp.fileContent) eq msg, 'File content not message! Expected #msg#, got #cfhttp.filecontent#') />
 </cffunction>
 
 <cffunction name="testSaveState" access="public" returntype="void">

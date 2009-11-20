@@ -1,7 +1,7 @@
 <cfparam name="URL.output" default="html">
 <cfparam name="url.quiet" default="false">
 <cfparam name="url.email" default="false">
-<cfparam name="url.recipients" default="????@????.com"> <!--- change this! --->
+<cfparam name="url.recipients" default="ezra@cfgrok.com"> <!--- change this! --->
 
 <cfset configStuff = structNew() >
 <cfset structAppend( configStuff, url ) />
@@ -19,7 +19,7 @@
 	recurse="true" 
 	excludes="#excludes#"
 	returnvariable="Results"
-	componentpath="modelglue.gesture"><!---  <-- Fill this in! This is the root component path for your tests. if your tests are at {webroot}/app1/test, then your componentpath will be app1.test   --->
+	componentpath="ModelGlue_3_EventGeneration.gesture"><!---  <-- Fill this in! This is the root component path for your tests. if your tests are at {webroot}/app1/test, then your componentpath will be app1.test   --->
 
 <cfsetting showdebugoutput="true">
 
@@ -39,7 +39,7 @@
 
 <cfif configStuff.email>
 	<!--- change this 'from' email! --->
-	<cfmail from="????@????.com" to="#configStuff.recipients#" subject="Test Results : #DateFormat(now(),'short')# @ #TimeFormat(now(),'short')#" type="html">
+	<cfmail from="ezra@cfgrok.com" to="#configStuff.recipients#" subject="Test Results : #DateFormat(now(),'short')# @ #TimeFormat(now(),'short')#" type="html">
 	#recenthtml#
 	</cfmail>
 </cfif>

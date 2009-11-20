@@ -15,6 +15,9 @@
 	<property name="primaryModule">
 		<value></value>
 	</property>
+	<property name="generationModule">
+		<value>ModelGlue.xml</value>
+	</property>
 	<property name="defaultTemplate">
 		<value>defaultTemplateValue</value>
 	</property>

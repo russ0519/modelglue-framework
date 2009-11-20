@@ -94,10 +94,8 @@
 	<cfif not fileExists(controllerFile)>
 		<cfset createController(eventName, controllerFile) />
 	<cfelse>
-		<cfset ctrlInst = createObject("component", controllerClassNameFor(eventName)) />
-		
-		<cfif not controllerHasFunction(ctrlInst, listenerFunctionNameFor(eventName))>
-			<cfset createListenerFunction(ctrlInst, listenerFunctionNameFor(eventName), eventName, controllerFile) />
+		<cfif not controllerHasFunction(controllerFile, listenerFunctionNameFor(eventName))>
+			<cfset createListenerFunction(eventName, controllerFile) />
 		</cfif>
 	</cfif>
 	
@@ -114,13 +112,16 @@
 	<cfsavecontent variable="content"><cgcomponent output="false" hint="I am a Model-Glue controller." extends="ModelGlue.gesture.controller.Controller">
 
 	<cgfunction name="init" access="public" output="false" hint="Constructor">
+		<cgargument name="framework" />
+		
+		<cgset super.init(framework) />
+		
 		<cgreturn this />
 	</cgfunction>
 
 #createListenerFunctionContent(eventName)#
 
-</cgcomponent>
-	</cfsavecontent>
+</cgcomponent></cfsavecontent>
 	</cfoutput>
 
 	<cfset content = clean(content) />
@@ -129,8 +130,6 @@
 </cffunction>
 
 <cffunction name="createListenerFunction" output="false">
-	<cfargument name="controller" />
-	<cfargument name="function" />
 	<cfargument name="eventName" />
 	<cfargument name="filename" />
 	
@@ -138,19 +137,17 @@
 	<cfset var content = "" />
 	<cfset var constructorPosition = "" />
 	
-	<cffile action="read" file="#filename#" variable="filecontent">
+	<cffile action="read" file="#filename#" variable="filecontent" />
 	
 	<cfoutput>
-	<cfsavecontent variable="content">
-#createListenerFunctionContent(eventName)#
+	<cfsavecontent variable="content">#createListenerFunctionContent(eventName)#
 
-</cgcomponent>
-	</cfsavecontent>
+</cgcomponent></cfsavecontent>
 	</cfoutput>
 	
 	<cfset content = clean(content) />
 
-	<cfset filecontent = replaceNoCase(filecontent, "</cfcomponent>", content) />
+	<cfset filecontent = REReplaceNoCase(filecontent, "</cfcomponent>\s*", content) />
 
 	<cfset write(filename, filecontent) />
 </cffunction>
@@ -162,8 +159,7 @@
 	<cfset var content = "" />
 	
 	<cfoutput>
-	<cfsavecontent variable="content">
-	<cgfunction name="#function#" output="false" hint="I am a message listener function generated for the ""#eventName#"" event.">
+	<cfsavecontent variable="content">	<cgfunction name="#function#" output="false" hint="I am a message listener function generated for the '#eventName#' event.">
 		<cgargument name="event" />
 		
 		<=--- 
@@ -171,8 +167,7 @@
 			  
 			Use event.getValue("name") to get variables from the FORM and URL scopes.
 		--->
-	</cgfunction>
-	</cfsavecontent>
+	</cgfunction></cfsavecontent>
 	</cfoutput>
 	
 	<cfreturn content />
@@ -192,11 +187,11 @@
 	
 	<cffile action="read" file="#targetFile#" variable="xmlString" />
 	
-	<cftry>	
+	<cftry>
 		<cfset xml = xmlParse(xmlString) />
 		<cfcatch>
 			<cfthrow type="XMLEventGenerationService.InvalidModelGlueXML"
-							 message="Can't generate <controller> into #targetFile# - it's not valid XML!"
+				message="Can't generate <controller> into #targetFile# - it's not valid XML!"
 			/>
 		</cfcatch>
 	</cftry>
@@ -237,27 +232,56 @@
 </cffunction>
 
 <cffunction name="controllerHasFunction" output="false">
-	<cfargument name="controller" />
+	<cfargument name="filename" />
 	<cfargument name="function" />
 	
-	<cfset var md = getMetadata(controller) />
-	<cfset var i = "" />
+	<cfset var filecontent = "" />
+	<cfset var functionRE = "<cffunction[^>]+name=""#function#""" />
 	
-	<cfif not structKeyExists(md, "functions")>
-		<cfreturn false />
+	<cffile action="read" file="#filename#" variable="filecontent" />
+	
+	<cfif REFindNoCase(functionRE, filecontent)>
+		<cfreturn true />
 	</cfif>
-	
-	<cfif not arrayLen(md.functions)>
-		<cfreturn false />
-	</cfif>
-	
-	<cfloop from="1" to="#arrayLen(md.functions)#" index="i">
-		<cfif md.functions[i].name eq function>
-			<cfreturn true />
-		</cfif>
-	</cfloop>
 	
 	<cfreturn false />
+</cffunction>
+
+<cffunction name="hasEventHandler" output="false">
+	<cfargument name="eventName" />
+	
+	<cfset var targetFile = getConfigFile() />
+	<cfset var xmlString = "" />
+	<cfset var xml = "" />
+	<cfset var ehsNode = "" />
+	<cfset var ehNode = "" />
+	
+	<!--- Get all event handlers --->
+	<cflog text="#eventName#" />
+	<cffile action="read" file="#targetFile#" variable="xmlString" />
+	
+	<cftry>
+		<cfset xml = xmlParse(xmlString) />
+		<cfcatch>
+			<cfthrow type="XMLEventGenerationService.InvalidModelGlueXML"
+				message="Can't detect event-handler in #targetFile# - it's not valid XML!"
+			/>
+		</cfcatch>
+	</cftry>
+	
+	<!--- Get <event-handlers> block --->
+	<cfset ehsNode = xmlSearch(xml, "//event-handlers") />
+	<cfif not arrayLen(ehsNode)>
+		<cfreturn false />
+	</cfif>
+
+	<!--- If we don't have a match --->
+	<cfset ehNode = xmlSearch(xml, "//event-handlers/event-handler[@name='#eventName#']")>
+	<cfif not arrayLen(ehNode)>
+		<cfreturn false />
+	</cfif>
+	
+	<cfreturn true />
 </cffunction>
 
 <cffunction name="generateEventHandler" output="false">
@@ -281,11 +305,11 @@
 	
 	<cffile action="read" file="#targetFile#" variable="xmlString" />
 	
-	<cftry>	
+	<cftry>
 		<cfset xml = xmlParse(xmlString) />
 		<cfcatch>
 			<cfthrow type="XMLEventGenerationService.InvalidModelGlueXML"
-							 message="Can't generate <controller> into #targetFile# - it's not valid XML!"
+				message="Can't generate <event-handler> into #targetFile# - it's not valid XML!"
 			/>
 		</cfcatch>
 	</cftry>
@@ -305,7 +329,7 @@
 		<!--- Go until we're alphabetically greater or we're at end --->
 		<cfloop from="1" to="#arrayLen(ehNodes)#" index="i">
 			<cfif structKeyExists(ehNodes[i].xmlAttributes, "name") and compareNoCase(ehNodes[i].xmlAttributes.name, eventName) gte 0>
-				<cfbreak />	
+				<cfbreak />
 			</cfif>
 		</cfloop>
 		
@@ -326,7 +350,7 @@
 		
 		<cfif len(type)>
 			<cfset ehNode.xmlAttributes["type"] = type />
-		</cfif>		
+		</cfif>
 
 		<cfset bNode = xmlElemNew(xml, "broadcasts") />
 		<cfset mNode = xmlElemNew(xml, "message") />
@@ -346,7 +370,7 @@
 		<cfset arrayAppend(ehNode.xmlChildren, bNode) />
 		<cfset arrayAppend(ehNode.xmlChildren, rNode) />
 		<cfset arrayAppend(ehNode.xmlChildren, vNode) />
-	</cfif> 
+	</cfif>
 	
 	<cfset writeXml(targetFile, xml) />
 </cffunction>
@@ -366,7 +390,7 @@
 				<cfset result = result & uCase(left(term, 1)) & right(term, len(term) - 1) />
 			<cfelse>
 				<cfset result = term />
-			</cfif>	
+			</cfif>
 		</cfloop>
 	<cfelse>
 		<cfreturn arguments.string />
