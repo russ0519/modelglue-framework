@@ -1,0 +1,10 @@
+Build Process For ModelGlue.
+
+1) Run Var Scoper 
+1.1) Ensure 0 reported issues even if you have to explicitly scope variables that technically don't need to be var scoped.
+2) Run MX Unit Test Suite at /ModelGlue/gesture/test/ScheduledRun.cfm
+2.1) Ensure 0 reported errors
+3) Commit ALL changes to SVN with descriptive comment as to the nature of the build and changes implemented.
+4) Run deploy.xml to strip out version control files and also run any cleanup on the files.
+5) Make zip file and update links/titles on ModelGlue.com/includes/dspHeader.cfm on ModelGlue.com/coldfusion.cfm and index.cfm
+6) Announce new zip file to public.
