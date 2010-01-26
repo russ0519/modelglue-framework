@@ -1,7 +1,7 @@
 <cfparam name="URL.output" default="html">
 <cfparam name="url.quiet" default="false">
 <cfparam name="url.email" default="false">
-<cfparam name="url.recipients" default="ezra@cfgrok.com"> <!--- change this! --->
+<cfparam name="url.recipients" default="????@????.com"> <!--- change this! --->
 
 <cfset configStuff = structNew() >
 <cfset structAppend( configStuff, url ) />
@@ -39,7 +39,7 @@
 
 <cfif configStuff.email>
 	<!--- change this 'from' email! --->
-	<cfmail from="ezra@cfgrok.com" to="#configStuff.recipients#" subject="Test Results : #DateFormat(now(),'short')# @ #TimeFormat(now(),'short')#" type="html">
+	<cfmail from="????@????.com" to="#configStuff.recipients#" subject="Test Results : #DateFormat(now(),'short')# @ #TimeFormat(now(),'short')#" type="html">
 	#recenthtml#
 	</cfmail>
 </cfif>
