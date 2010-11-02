@@ -49,8 +49,8 @@
 				</constructor-arg>
 				<constructor-arg name="modules">
 					<list>
-						<value>/ModelGlue/gesture/modules/internal/initialization/config/initialization.xml</value>
 						<value>/ModelGlue/gesture/modules/orm/config/ModelGlue.xml</value>
+						<value>/ModelGlue/gesture/modules/internal/initialization/config/initialization.xml</value>
 					</list>
 				</constructor-arg>
 			</bean>
@@ -152,6 +152,7 @@
 	</property>
 </bean>
 
+<bean id="modelglue.MemoizedModelGlue" class="ModelGlue.gesture.MemoizedModelGlue" parent="modelglue.ModelGlue" />
 <!-- 
 	Injector that performs "beans"-scope injection and autowiring for controllers and helper components.
 -->
@@ -164,7 +165,8 @@
 	that loaded controllers / event handlers from a database, you can implement
 	it and register it here.
 -->
-<bean id="modelglue.ModuleLoaderFactory" class="ModelGlue.gesture.factory.TypeDefaultingMapBasedFactory">
+<bean id="modelglue.ModuleLoaderFactory" class="ModelGlue.gesture.module.XMLModuleLoaderFactory">
+	<constructor-arg name="modelGlueConfiguration"><ref bean="modelglue.modelGlueConfiguration" /></constructor-arg>
 	<constructor-arg name="registeredClasses">
 		<map>
 			<entry key="XML">

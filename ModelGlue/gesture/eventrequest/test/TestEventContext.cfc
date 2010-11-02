@@ -259,7 +259,6 @@
 	<cfset eventHandlers[eh2.name] = eh2 />
 	<cfset eventHandlers[eh3.name] = eh3 />
 	<cfset er.setEventHandlerMap(eventHandlers) />
-
 	<!--- Execute --->	
 	<cfset variables.listener1_testExecuteEventHandler_ResultQueueing_value = false />
 	<cfset variables.listener2_testExecuteEventHandler_ResultQueueing_value = false />
@@ -364,7 +363,9 @@
 	<cfset variables.listener1_testExecuteEventHandler_ResultQueueing_value = false />
 	<cfset variables.listener2_testExecuteEventHandler_ResultQueueing_value = false />
 	<cfset variables.testExecuteEventHandler_ResultQueueing_order = "" />
+	
 	<cfset er.addEventHandler(eh1) />
+	<!---<cfdump var="#er.getNextEventHandler()#"><cfabort>--->
 	<cfset er.execute() />
 		
 	<!--- All listeners should have fired --->
@@ -626,7 +627,7 @@
 	<cfset structClear(url) />
 	
 	<cfset ec = mg.handleRequest() />
-	
+
 	<cfset assertTrue( ec.exists("onRequestStart"), "The internal onRequestStart function was not invoked" ) />
 	<cfset assertTrue( ec.exists("customOnRequestStart"), "The custom onRequestStart function was not invoked" ) />
 	
@@ -708,7 +709,9 @@
 	<cfset url.requestFormat = "format" />
 	
 	<cfset ec = mg.handleRequest() />
-	
+	<cfdump var="#mg.getEventHandler( url.event )#">
+	<cfdump var="#mg.getEventHandler( "targetEvent" )#">
+	<cfabort>
 	<cfset assertEquals( "format,none", ec.getValue("messageFormats"), "The message with the format of ""format"" should be broadcast first" ) />
 	
 	<cfset structClear(url) />

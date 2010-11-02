@@ -11,9 +11,11 @@
 	
 	<cffunction name="createBootstrapper" access="private">
 		<cfargument name="coldspringPath" default="#this.coldspringPath#">
+		<cfargument name="modelGlueBeanName" default="modelglue.ModelGlue">
 		<cfset var bootstrapper = createObject("component", "ModelGlue.gesture.loading.ColdSpringBootstrapper")>
 		<cfset bootstrapper.coldspringPath = arguments.coldspringPath>
 		<cfset bootstrapper.coreColdspringPath = arguments.coldspringPath>
+		<cfset bootstrapper.modelGlueBeanName = arguments.modelGlueBeanName>
 		
 		<cfset request._modelglue.bootstrap.bootstrapper = bootstrapper />
 		<cfset request._modelglue.bootstrap.initializationRequest = true />
@@ -33,9 +35,31 @@
 	
 	<cffunction name="createModelGlue" access="private">
 		<cfargument name="coldspringPath" default="#this.coldspringPath#">
-		<cfset variables.mg = createBootstrapper(coldspringPath).
-					createModelGlue()>
+		<cfargument name="ShouldUseMemoized" default="false" />
+		<cfif ShouldUseMemoized IS true>
+			<cfset variables.mg = createBootstrapper(coldspringPath, "modelglue.MemoizedModelGlue").createModelGlue()>
+		<cfelse>
+			<cfset variables.mg = createBootstrapper(coldspringPath).createModelGlue()>
+		</cfif>
 					
+		<!--- load "test" application event definitions --->
+		<cfset mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML").load( mg, expandPath("/ModelGlue/gesture/test/primaryModule.xml") ) />
+
+		<cfset request._modelglue.bootstrap.framework = mg />
+		
+		<cfreturn  mg>	
+	</cffunction>
+
+	
+	<cffunction name="createMemoizedModelGlue" access="private">
+		<cfset var coldspringPath = "/ModelGlue/gesture/module/test/ColdSpringWithMemoizedXMLModuleLoader.xml">
+		<cfset variables.mg = createBootstrapper(coldspringPath, "modelglue.MemoizedModelGlue").createModelGlue( coldSpringPath )>
+<!---		
+		<cfdump var="#coldSpringPath#">
+		<cfdump var="#variables.mg#">
+		<cfdump var="#mg.getInternalBean("modelglue.ModuleLoaderFactory")#">
+		<cfdump var="#mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML")#">
+		<cfabort>--->
 		<!--- load "test" application event definitions --->
 		<cfset mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML").load( mg, expandPath("/ModelGlue/gesture/test/primaryModule.xml") ) />
 

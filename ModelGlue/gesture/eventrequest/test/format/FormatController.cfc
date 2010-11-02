@@ -18,7 +18,9 @@
 	<cfset var messageFormats = arguments.event.getValue("messageFormats") />
 	
 	<cfset messageFormats = listAppend(messageFormats, "none") />
-	
+	<!---<cfdump var="#event.getAllValues()#">
+	<cfdump var="#getModelGlue().hasEventHandler("formatTargetEvent")#">
+	<cfabort>--->
 	<cfset arguments.event.setValue("messageFormats", messageFormats) />
 </cffunction>
 

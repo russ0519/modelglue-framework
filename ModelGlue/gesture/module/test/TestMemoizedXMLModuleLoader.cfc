@@ -11,28 +11,16 @@
 	 
  --->
 
-<cfset this.coldspringPath = "/ModelGlue/gesture/test/ColdSpring.xml">
+<cfset this.coldspringPath = "/ModelGlue/gesture/module/test/ColdSpringWithMemoizedXMLModuleLoader.xml">
 
-<cffunction name="testSimpleXMLModule" returntype="void" access="public">
-	<cfset var mg = createModelGlue(this.coldspringPath) />
+<cffunction name="testLoading" returntype="void" access="public">
+	<cfset var mg = createMemoizedModelGlue(this.coldspringPath) />
 	<cfset var loader = "" />
-	<cfset var obj = "" />
-	<cfset var controllerVars = "" />
-	<cfset var beanFactory = "" />
-	<cfset var ctrl = "" />
-	
 	<cfset mg.getInternalBeanFactory().loadBeans(expandPath("/ModelGlue/gesture/externaladapters/beaninjection/test/ColdSpring.xml")) />
-	
+	<cfset mg.getInternalBeanFactory().loadBeans(expandPath( this.coldSpringPath )) />
 	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/module/test/simpleXmlModule.xml") />
-
-	<!--- Test controller loading --->
-	<cfset assertTrue(mg.hasEventListener("messageName"), "No listeners for messageName found") />
-	<cfset obj = mg.getEventListeners("messageName") />
-	<cfset assertTrue(arrayLen(obj) eq 1, "Incorrect number of listeners found (should be 1, was #arrayLen(obj)#)") />
-	<cfset obj = obj[1] />
-	<cfset assertTrue(GetMetadata(obj.target).name eq "ModelGlue.gesture.module.test.Controller", "Controller not of right type") />
-	<cfset assertTrue(obj.listenerFunction eq "listener", "listener function not right name") />
+	<cfset loader.load(mg, "/ModelGlue/gesture/module/test/IncludePlusModulePlusSimpleXmlModule.xml") />
+	<cfset assertTrue( arrayLen( mg.getParsedModelGlueConfigurationArray() ) IS 3, "The XML Config Didn't return what we wanted [#arrayLen( mg.getParsedModelGlueConfigurationArray() )#]") />
 
 	<!--- Test controller bean injection / autowiring --->
 	<cfset ctrl = mg.getController("controller") />
@@ -41,7 +29,7 @@
 	<cfset assertTrue(structKeyExists(controllerVars, "beans"), "beans scope not created") />
 	<cfset assertTrue(structKeyExists(controllerVars.beans, "bean") and isObject(controllerVars.beans.bean), "beans.bean not existent or not object") />
 	<cfset assertTrue(isObject(ctrl.getBean2()), "controller not autowired") />
-
+	
 	<!--- Test event handler loading --->
 	<cfset obj = mg.getEventHandler("eventHandlerName") />
 	<cfset assertTrue(isObject(obj), "event handler not object!") />
@@ -81,14 +69,13 @@
 </cffunction>
 
 <cffunction name="testIncludeStyleMasterXMLModule" returntype="void" access="public">
-	<cfset var mg = createModelGlueIfNotDefined(this.coldspringPath) />
+	<cfset var mg = createMemoizedModelGlue(this.coldspringPath) />
 	<cfset var loader = "" />
 	<cfset var obj = "" />
 	<cfset var beanFactory = "" />
 	
-	<cfset beanFactory = mg.getInternalBeanFactory() />
+	<cfset beanFactory = mg.getInternalBeanFactory() />	
 	<cfset beanFactory.loadBeans(expandPath("/ModelGlue/gesture/externaladapters/beaninjection/test/ColdSpring.xml")) />
-	
 	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
 	
 	<cfset loader.load(mg, "/ModelGlue/gesture/module/test/includeStyleMasterXmlModule.xml") />

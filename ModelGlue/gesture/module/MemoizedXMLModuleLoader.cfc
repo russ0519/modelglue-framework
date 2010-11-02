@@ -12,9 +12,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 
 <cffunction name="init" output="false">
 	<cfset variables.eventTypes = structNew() />
-	<cfset variables.parsedXMLArray = arrayNew(1) />
-	<cfset this.createdon = timeformat( now(), "hh:mm:ss:l") />
-	<cfset this.uuid = createUUID() />
+	<cfset variables.parsedXML = "" />
 	<cfreturn this />
 </cffunction>
 
@@ -31,14 +29,13 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 		<!--- We want to use the XML Model Loader to process this immediately so we have a fully up and running Model Glue (I think) --->
 	<cfif structKeyExists(loadedModules, arguments.path) IS false>
 		<!--- Don't load a module twice. --->
-		<cfset arguments.modelglue.addModuleLoader( this ) />
+		<cfset arguments.modelglue.ModuleLoaderArray( this ) />
 		<cfset arguments.loadedModules[arguments.path] = true />
 		<!--- This is a lazy loaded config so we need to process it, and follow the include trail --->
 		<cfset parsedXML = loadConfig( arguments.path ) />
-		
 		<!--- We want to parse all XML and put it into memory. Ideally inside of a ColdFusion Query so we can manage state and ordinality --->
-		<cfset arrayAppend( variables.parsedXMLArray, parsedXML ) />
-		<cfset this.parsedXML = variables.parsedXMLArray />
+		<cfset variables.parsedXML = parsedXML />
+		
 			
 		<!--- We load "down the chain" first so that higher-level event handlers override lower-level. --->
 		<cfset modules = xmlSearch(parsedXML, "/modelglue/module") />
@@ -108,33 +105,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	</cfloop>
 </cffunction>	
 
-<cffunction name="loadControllersForBroadcastXML" output="false" hint="Loads controllers from <controllers> block where a controller has been configured to listen to a certain message.">
-	<cfargument name="modelglue" />
-	<cfargument name="broadcastsXml" />
-	<cfset var i = "" />
-	<cfset var j = "" />
-	<cfset var k = "" />
-	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
-	<cfset var controllerDefinitionArray = "" />
-	
-	<cfloop from="1" to="#arrayLen(arguments.broadcastsXml.xmlChildren)#" index="i">
-	
-			<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="j">
-			<cfset controllerDefinitionArray =  xmlSearch( variables.parsedXMLArray[j], "/modelglue/controllers/controller" ) />
-		
-			<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="k">
-				<cfif arrayLen( xmlSearch( controllerDefinitionArray[k], "/modelglue/controllers/controller/message-listener[@message='#arguments.broadcastsXml.xmlChildren[i].xmlAttributes.name#']" ) ) GT 0>
-					<cfparam name="controllerDefinitionArray[k].xmlAttributes.id" default="#controllerDefinitionArray[k].xmlAttributes.type#" />
-					<cfif arguments.modelglue.controllerIsAlreadyLoaded( controllerDefinitionArray[k].XmlAttributes.id ) IS false>
-						<cfset makeController(arguments.modelglue, controllerDefinitionArray[k] ) />
-					</cfif>
-				</cfif>
-			</cfloop>
-		</cfloop>
-	</cfloop>
-
-</cffunction>	
-
 <cffunction name="findControllerDefinition" output="false" hint="Loads controller from controller block.">
 	<cfargument name="configurationXML" />
 	<cfargument name="ControllerName" type="string" default="" />
@@ -145,16 +115,13 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfargument name="modelglue" />
 	<cfargument name="ControllerName" type="string" default="" />
 	<cfset var i = "" />
-	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
 	<cfset var controllerDefinitionArray = "" />
 	<cfset var j = "" />
 	
-	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
-		<cfset controllerDefinitionArray = findControllerDefinition(variables.parsedXMLArray[i], arguments.ControllerName ) />
+	<cfset controllerDefinitionArray = findControllerDefinition(variables.parsedXML, arguments.ControllerName ) />
 	
-		<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="j">
-			<cfset makeController(arguments.modelglue, controllerDefinitionArray[j] ) />
-		</cfloop>
+	<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="j">
+		<cfset makeController(arguments.modelglue, controllerDefinitionArray[j] ) />
 	</cfloop>
 </cffunction>
 
@@ -235,38 +202,27 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 </cffunction>	
 
 <cffunction name="hasEventHandlerDefinition" output="false" hint="Loads event-handlers from <event-handlers> block.">
+	<cfargument name="modelglue" type="ModelGlue.gesture.ModelGlue" hint="The instance of Model-Glue into which a module should be loaded.">
 	<cfargument name="eventHandlerName" type="string" default="" />
-	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
-	<cfset var i = "" />
-	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
-		<cfif arrayLen( findEventHandlerDefinition(variables.parsedXMLArray[i], arguments.eventHandlerName ) ) GT 0>
-			<cfreturn true />
-		</cfif>
-	</cfloop>
-	
-	<cfreturn false />	
+	<cfreturn arrayLen( findEventHandlerDefinition(variables.parsedXML, arguments.eventHandlerName ) ) />
 </cffunction>
 
 <cffunction name="findEventHandlerDefinition" output="false" hint="Loads event-handlers from <event-handlers> block.">
-	<cfargument name="parsedXMLConfig" type="any" required="true"/>
+	<cfargument name="configurationXML" />
 	<cfargument name="eventHandlerName" type="string" default="" />
-	<cfreturn xmlSearch( arguments.parsedXMLConfig, "/modelglue/event-handlers/event-handler[@name='#arguments.eventHandlerName#']" )/>
+	<cfreturn xmlSearch( arguments.configurationXML, "/modelglue/event-handlers/event-handler[@name='#arguments.eventHandlerName#']" )/>
 </cffunction>
 
 <cffunction name="locateAndMakeEventHandler" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="modelglue" />
 	<cfargument name="eventHandlerName" type="string" default="" />
 	<cfset var eventHandlerDefinition = "" />
-	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
-	<cfset var i = "" />
-	<cfset var j = "" />
 	
-	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
-		<cfset eventHandlerDefinitionArray = findEventHandlerDefinition(variables.parsedXMLArray[i], arguments.eventHandlerName ) />
-		
-		<cfloop from="1" to="#arrayLen( eventHandlerDefinitionArray)#" index="j">
-			<cfset makeEventHandler(arguments.modelglue, eventHandlerDefinitionArray[j] )  />
-		</cfloop>
+	<!--- Since the last one loaded wins, let's start from the end --->
+	<cfset eventHandlerDefinitionArray = findEventHandlerDefinition(variables.parsedXML, arguments.eventHandlerName ) />
+	
+	<cfloop from="1" to="#arrayLen( eventHandlerDefinitionArray)#" index="j">
+		<cfset makeEventHandler(arguments.modelglue, eventHandlerDefinitionArray[j] )  />
 	</cfloop>
 </cffunction>
 
@@ -293,7 +249,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 		<cftry>
 			<!--- If the event-handler already exists, get a reference to it --->
 			<cfif arguments.modelglue.hasEventHandler(arguments.ehXml.xmlAttributes.name)>
-				<cfset ehInst =  this.eventHandlers[arguments.ehXml.xmlAttributes.name] />
+				<cfset ehInst = arguments.modelglue.getEventHandler(arguments.ehXml.xmlAttributes.name) />
 				
 				<!--- If it's not an "extensible" event-handler, create a new eh object--->
 				<cfif not ehInst.extensible>
@@ -339,7 +295,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 		
 		<cfloop from="1" to="#arrayLen(childXml)#" index="i">
 			<cfset loadMessages(ehInst, childXml[i]) />
-			<cfset loadControllersForBroadcastXML( arguments.modelglue, childXml[i] ) />
 		</cfloop>
 		
 		<!--- Load results --->
