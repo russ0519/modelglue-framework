@@ -581,11 +581,9 @@
 <!--- EVENT HANDLER NAME TESTS --->
 <cffunction name="testGetInitialEventHandlerNameForDefaultEvent" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/eventHandlerName.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/eventHandlerName.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -598,11 +596,9 @@
 
 <cffunction name="testGetInitialEventHandlerNameForExplicitEvent" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/eventHandlerName.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/eventHandlerName.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -618,16 +614,14 @@
 <!--- EVENT HANDLER EXTENSIBILITY TEST --->
 <cffunction name="testEventHandlerExtensibility" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/eventHandlerExtensibility.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/eventHandlerExtensibility.xml")>
 	
 	<cfset structClear(url) />
 	
 	<cfset ec = mg.handleRequest() />
-
+	
 	<cfset assertTrue( ec.exists("onRequestStart"), "The internal onRequestStart function was not invoked" ) />
 	<cfset assertTrue( ec.exists("customOnRequestStart"), "The custom onRequestStart function was not invoked" ) />
 	
@@ -637,11 +631,9 @@
 <!--- FORMAT EXECUTION ORDER TESTS --->
 <cffunction name="testExecutionOrderOfMessageBroadcastWithFormat" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -657,11 +649,9 @@
 
 <cffunction name="testExecutionOrderOfMessageBroadcastWithFormatFromEventType" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -677,11 +667,9 @@
 
 <cffunction name="testExecutionOrderOfImplicitResultQueuedWithFormat" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -697,11 +685,9 @@
 
 <cffunction name="testExecutionOrderOfImplicitResultQueuedWithFormatFromEventType" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -709,9 +695,7 @@
 	<cfset url.requestFormat = "format" />
 	
 	<cfset ec = mg.handleRequest() />
-	<cfdump var="#mg.getEventHandler( url.event )#">
-	<cfdump var="#mg.getEventHandler( "targetEvent" )#">
-	<cfabort>
+	
 	<cfset assertEquals( "format,none", ec.getValue("messageFormats"), "The message with the format of ""format"" should be broadcast first" ) />
 	
 	<cfset structClear(url) />
@@ -719,11 +703,9 @@
 
 <cffunction name="testExecutionOrderOfNamedResultQueuedWithFormat" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -739,11 +721,9 @@
 
 <cffunction name="testExecutionOrderOfNamedResultQueuedWithFormatFromEventType" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -759,11 +739,9 @@
 
 <cffunction name="testExecutionOrderOfViewQueuedWithFormat" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	
@@ -779,11 +757,9 @@
 
 <cffunction name="testExecutionOrderOfViewQueuedWithFormatFromEventType" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
-	<cfset var loader = "" />
 	<cfset var ec = "" />
 	
-	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
-	<cfset loader.load(mg, "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml") />
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/format/formatOrder.xml")>
 	
 	<cfset structClear(url) />
 	

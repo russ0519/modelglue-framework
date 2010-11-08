@@ -13,13 +13,16 @@
 		<value>true</value>
 	</property>
 	<property name="primaryModule">
-		<value></value>
+		<value>/ModelGlue/gesture/test/primaryModule.xml</value>
 	</property>
 	<property name="defaultTemplate">
 		<value>defaultTemplateValue</value>
 	</property>
 	<property name="eventValue">
 		<value>event</value>
+	</property>
+	<property name="helperMappings">
+		<value>/I/Am/A/HelperMapping</value>
 	</property>
 </bean>
 	

@@ -21,4 +21,12 @@
 	
 </cffunction>
 
+<cffunction name="generateScaffolds" output="false" access="public" returntype="void" hint="">
+	<cfargument name="event">
+	
+	<cfif getModelGlue().getConfigSetting("reload") is true and getModelGlue().getConfigSetting("rescaffold") is true>
+		
+	</cfif>
+</cffunction>
+
 </cfcomponent>

@@ -55,6 +55,8 @@
 
 <event-handlers>
 
+	<event-handler name="home" />
+
 	<event-handler name="broadcastEvent">
 		<broadcasts format="format">
 			<message name="formatMessage" />

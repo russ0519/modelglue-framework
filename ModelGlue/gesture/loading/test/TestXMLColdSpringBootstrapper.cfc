@@ -4,11 +4,12 @@
 
 <cffunction name="testStoreModelGlue" returntype="void" access="public">
 	<cfset var boot = createObject("component", "ModelGlue.gesture.loading.XMLColdSpringBootstrapper") />
-	<cfset var mg = createObject("component", "ModelGlue.gesture.ModelGlue") />
+	<cfset var mg = createObject("component", "ModelGlue.gesture.MemoizedModelGlue") />
 	<cfset var testVal = createUUID() />
 	
 	<cfset boot.coldspringPath = "/ModelGlue/gesture/loading/test/ColdSpring.xml" />
 	<cfset boot.coreColdspringPath = "/ModelGlue/gesture/loading/test/ColdSpring.xml" />
+	<cfset boot.modelGlueBeanName = "modelglue.ModelGlue">
 	
 	<cfset boot.storeModelGlue(mg) />
 	

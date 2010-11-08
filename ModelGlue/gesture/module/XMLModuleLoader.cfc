@@ -13,8 +13,10 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 <cffunction name="init" output="false">
 	<cfset variables.eventTypes = structNew() />
 	<cfset variables.parsedXMLArray = arrayNew(1) />
+	
 	<cfset this.createdon = timeformat( now(), "hh:mm:ss:l") />
 	<cfset this.uuid = createUUID() />
+	
 	<cfreturn this />
 </cffunction>
 
@@ -22,24 +24,39 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfargument name="modelglue" type="ModelGlue.gesture.ModelGlue" hint="The instance of Model-Glue into which a module should be loaded.">
 	<cfargument name="path" hint="The .XML file containing the module." />
 	<cfargument name="loadedModules" type="struct" default="#structNew()#" hint="Location-keyed collection of modules loaded _during this loading request_ (prevents infinitely recursive loading)." />
+	
 	<cfset var moduleLoaderFactory = modelglue.getInternalBean("modelglue.ModuleLoaderFactory") />
 	<cfset var parsedXML = "" />
+	<cfset var etBlocks = "" />
 	<cfset var modules = "" />
 	<cfset var includes = "" />
 	<cfset var i = "" />
+	
 	<!---<cfif structKeyExists( variables.hydrateImmediately, arguments.path) IS true AND structKeyExists(loadedModules, arguments.path) IS false>--->
-		<!--- We want to use the XML Model Loader to process this immediately so we have a fully up and running Model Glue (I think) --->
+	<!--- We want to use the XML Model Loader to process this immediately so we have a fully up and running Model Glue (I think) --->
 	<cfif structKeyExists(loadedModules, arguments.path) IS false>
 		<!--- Don't load a module twice. --->
-		<cfset arguments.modelglue.addModuleLoader( this ) />
+		<cfif structKeyExists(loadedModules, arguments.path)>
+			<cfreturn />
+		</cfif>
 		<cfset arguments.loadedModules[arguments.path] = true />
+		
+		<cfif not arrayLen(arguments.modelglue.getModuleLoaderArray())>
+			<cfset arguments.modelglue.addModuleLoader( this ) />
+		</cfif>
+		
 		<!--- This is a lazy loaded config so we need to process it, and follow the include trail --->
 		<cfset parsedXML = loadConfig( arguments.path ) />
 		
 		<!--- We want to parse all XML and put it into memory. Ideally inside of a ColdFusion Query so we can manage state and ordinality --->
 		<cfset arrayAppend( variables.parsedXMLArray, parsedXML ) />
-		<cfset this.parsedXML = variables.parsedXMLArray />
-			
+		
+		<!--- Load event types --->
+		<cfset etBlocks = xmlSearch(parsedXML, "/modelglue/event-types") />
+		<cfloop from="1" to="#arrayLen(etBlocks)#" index="i">
+			<cfset loadEventTypes(arguments.modelglue, etBlocks[i]) />
+		</cfloop>
+		
 		<!--- We load "down the chain" first so that higher-level event handlers override lower-level. --->
 		<cfset modules = xmlSearch(parsedXML, "/modelglue/module") />
 		<cfloop from="1" to="#arrayLen(modules)#" index="i">
@@ -60,7 +77,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 		<cfloop from="1" to="#arrayLen(settingBlocks)#" index="i">
 			<cfset loadSettings(arguments.modelglue, settingBlocks[i]) />
 		</cfloop>
-	
 	</cfif>
 	
 </cffunction>
@@ -95,22 +111,55 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfreturn xmlParse(xml)>
 </cffunction>
 
+<cffunction name="loadEventTypes" output="false" hint="Loads event types from <event-types> block.">
+	<cfargument name="modelglue" />
+	<cfargument name="typesXML" />
+	
+	<cfset var etXml = "" />
+	<cfset var et = "" />
+	<cfset var i = "" />
+	<cfset var nodeName = "" />
+	<cfset var blockType = "" />
+	
+	<cfloop from="1" to="#arrayLen(arguments.typesXML.xmlChildren)#" index="i">
+		<cfset etXml = arguments.typesXML.xmlChildren[i] />
+		<cfset et = structNew() />
+		<cfset et.name = etXml.xmlAttributes.name />
+		
+		<cfloop list="before,after" index="blockType">
+			<cfset et[blockType] = structNew() />
+			<cfloop list="broadcasts,results,views" index="nodeName">
+				<cfif structKeyExists(etXml, blockType) and structKeyExists(etXml[blockType], nodeName)>
+					<cfset et[blockType][nodeName] = etXml[blockType][nodeName] />
+				</cfif>
+			</cfloop>
+		</cfloop>
+			
+		<!--- Don't allow overriding --->
+		<cfif not arguments.modelglue.hasEventType(et.name)>
+			<cfset arguments.modelglue.addEventType(et.name, et) />
+		</cfif>
+	</cfloop>
+</cffunction>
+
 <cffunction name="loadControllers" output="false" hint="Loads controllers from <controllers> block.">
 	<cfargument name="modelglue" />
 	<cfargument name="controllersXML" />
+	
 	<cfset var ctrlInst = "" />
 	<cfset var ctrlXml = "" />
 	<cfset var i = "" />
 
 	<cfloop from="1" to="#arrayLen(arguments.controllersXML.xmlChildren)#" index="i">
 		<cfset ctrlXml = arguments.controllersXML.xmlChildren[i] />
-		<cfset makeController( ctrlXml ) />
+		<cfset makeController( arguments.modelglue, ctrlXml ) />
 	</cfloop>
-</cffunction>	
+</cffunction>
 
 <cffunction name="loadControllersForBroadcastXML" output="false" hint="Loads controllers from <controllers> block where a controller has been configured to listen to a certain message.">
 	<cfargument name="modelglue" />
 	<cfargument name="broadcastsXml" />
+	
 	<cfset var i = "" />
 	<cfset var j = "" />
 	<cfset var k = "" />
@@ -118,8 +167,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfset var controllerDefinitionArray = "" />
 	
 	<cfloop from="1" to="#arrayLen(arguments.broadcastsXml.xmlChildren)#" index="i">
-	
-			<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="j">
+		<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="j">
 			<cfset controllerDefinitionArray =  xmlSearch( variables.parsedXMLArray[j], "/modelglue/controllers/controller" ) />
 		
 			<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="k">
@@ -132,12 +180,27 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 			</cfloop>
 		</cfloop>
 	</cfloop>
+</cffunction>
 
-</cffunction>	
+<cffunction name="hasControllerDefinition" output="false" hint="Loads controller from controller block.">
+	<cfargument name="controllerName" type="string" default="" />
+	
+	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
+	<cfset var i = "" />
+	
+	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
+		<cfif arrayLen( findControllerDefinition(variables.parsedXMLArray[i], arguments.controllerName ) ) GT 0>
+			<cfreturn true />
+		</cfif>
+	</cfloop>
+	
+	<cfreturn false />
+</cffunction>
 
 <cffunction name="findControllerDefinition" output="false" hint="Loads controller from controller block.">
 	<cfargument name="configurationXML" />
 	<cfargument name="ControllerName" type="string" default="" />
+	
 	<cfreturn xmlSearch( configurationXML, "/modelglue/controllers/controller[@id='#arguments.ControllerName#']" ) />
 </cffunction>
 
@@ -161,213 +224,267 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 <cffunction name="makeController" output="false" hint="Makes a controller from a controller block.">
 	<cfargument name="modelglue" />
 	<cfargument name="ctrlXml" />
+	
 	<cfset var beanId = "" />
 	<cfset var ctrlInst = "" />
 	<cfset var ctrlVars = "" />
-	<cfset var injector = arguments.modelglue.getInternalBean("modelglue.beanInjector") />	
-	<cfset var listXml = "" />	
+	<cfset var injector = arguments.modelglue.getInternalBean("modelglue.beanInjector") />
+	<cfset var listXml = "" />
 	<cfset var j = "" />
 		
-		<cfparam name="arguments.ctrlXml.xmlAttributes.type" default="" />
-		<cfparam name="arguments.ctrlXml.xmlAttributes.bean" default="" />
-		<cfparam name="arguments.ctrlXml.xmlAttributes.id" default="#arguments.ctrlXml.xmlAttributes.type#" />
-		<cfparam name="arguments.ctrlXml.xmlAttributes.beans" default="" />
-		<cfif len(arguments.ctrlXml.xmlAttributes.bean)>
-			<cfset ctrlInst = arguments.modelGlue.getBean(arguments.ctrlXml.xmlAttributes.bean) />
-		<cfelse>
-			<cfset ctrlInst = createObject("component", arguments.ctrlXml.xmlAttributes.type).init(arguments.modelglue, arguments.ctrlXml.xmlAttributes.id) />
+	<cfparam name="arguments.ctrlXml.xmlAttributes.type" default="" />
+	<cfparam name="arguments.ctrlXml.xmlAttributes.bean" default="" />
+	<cfparam name="arguments.ctrlXml.xmlAttributes.id" default="#arguments.ctrlXml.xmlAttributes.type#" />
+	<cfparam name="arguments.ctrlXml.xmlAttributes.beans" default="" />
+	<cfif len(arguments.ctrlXml.xmlAttributes.bean)>
+		<cfset ctrlInst = arguments.modelGlue.getBean(arguments.ctrlXml.xmlAttributes.bean) />
+	<cfelse>
+		<cfset ctrlInst = createObject("component", arguments.ctrlXml.xmlAttributes.type).init(arguments.modelglue, arguments.ctrlXml.xmlAttributes.id) />
+	</cfif>
+	
+	<!--- In case a controller constructor override doesn't do super() properly.... --->
+	<cfset ctrlInst.setModelGlue(arguments.modelglue) />
+
+	<!--- Create injection hooks --->
+	<cfset injector.createInjectionHooks(ctrlInst) />
+	
+	<!--- Always create the "beans" scope, even though it's explicitly created if needed by inject() --->
+	<cfset ctrlVars = ctrlInst._modelGlueBeanInjection_getVariablesScope() />
+	<cfset ctrlVars.beans = structNew() />
+	
+	<!--- Inject the cache adapter into the "beans" scope --->
+	<cfset ctrlVars.beans.CacheAdapter = arguments.modelglue.cacheAdapter />
+
+	<!--- Perform bean injection: Metadata --->
+	<cfset injector.injectBeanByMetadata(ctrlInst) />
+	
+	<!--- Perform bean injection: XML --->
+	<cfloop list="#ctrlXml.xmlAttributes.beans#" index="beanId">
+		<cfset injector.injectBean(beanId, ctrlInst) />
+	</cfloop>
+	
+	<cfset injector.injectBeanByMetadata(ctrlInst) />
+	<!--- Perform autowiring --->
+	<cfset injector.autowire(ctrlInst) />
+			
+	<!--- Add event listeners --->
+	<cfloop from="1" to="#arrayLen(arguments.ctrlXml.xmlChildren)#" index="j">
+		<cfset listXml = arguments.ctrlXml.xmlChildren[j] />
+		<cfparam name="listXml.xmlAttributes.function" default="" />
+		<!--- Function is optional and will be the message, unless explicitly provided --->
+		<cfif  len( trim( listXml.xmlAttributes.function ) ) IS 0>
+			<cfset listXml.xmlAttributes.function = listXml.xmlAttributes.message >
 		</cfif>
-		
-		<!--- In case a controller constructor override doesn't do super() properly.... --->
-		<cfset ctrlInst.setModelGlue(arguments.modelglue) />
-
-		<!--- Create injection hooks --->
-		<cfset injector.createInjectionHooks(ctrlInst) />
-		
-		<!--- Always create the "beans" scope, even though it's explicitly created if needed by inject() --->
-		<cfset ctrlVars = ctrlInst._modelGlueBeanInjection_getVariablesScope() />
-		<cfset ctrlVars.beans = structNew() />
-		
-		<!--- Inject the cache adapter into the "beans" scope --->
-		<cfset ctrlVars.beans.CacheAdapter = arguments.modelglue.cacheAdapter />
-
-		<!--- Perform bean injection: Metadata --->
-		<cfset injector.injectBeanByMetadata(ctrlInst) />
-		
-		<!--- Perform bean injection: XML --->
-		<cfloop list="#ctrlXml.xmlAttributes.beans#" index="beanId">
-			<cfset injector.injectBean(beanId, ctrlInst) />
-		</cfloop>
-		
-		<cfset injector.injectBeanByMetadata(ctrlInst) />
-		<!--- Perform autowiring --->
-		<cfset injector.autowire(ctrlInst) />
-				
-		<!--- Add event listeners --->
-		<cfloop from="1" to="#arrayLen(arguments.ctrlXml.xmlChildren)#" index="j">
-			<cfset listXml = arguments.ctrlXml.xmlChildren[j] />
-			<cfparam name="listXml.xmlAttributes.function" default="" />
-			<!--- Function is optional and will be the message, unless explicitly provided --->
-			<cfif  len( trim( listXml.xmlAttributes.function ) ) IS 0>
-				<cfset listXml.xmlAttributes.function = listXml.xmlAttributes.message >
-			</cfif>
-			<cfset modelglue.addEventListener(listXml.xmlAttributes.message, ctrlInst, listXml.xmlAttributes.function) />
-			<cfset modelglue.addController(arguments.ctrlXml.xmlAttributes.id, ctrlInst) />
-		</cfloop>
+		<cfset modelglue.addEventListener(listXml.xmlAttributes.message, ctrlInst, listXml.xmlAttributes.function) />
+		<cfset modelglue.addController(arguments.ctrlXml.xmlAttributes.id, ctrlInst) />
+	</cfloop>
 </cffunction>
 	
 <cffunction name="loadEventHandlers" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="modelglue" />
 	<cfargument name="handlersXML" />
+	
 	<cfset var ehXml = "" />
 	<cfset var ehInst = "" />
 	<cfset var i = "" />
-	
 	
 	<cfloop from="1" to="#arrayLen(arguments.handlersXML.xmlChildren)#" index="i">
 		<cfset ehXml = arguments.handlersXML.xmlChildren[i] />
 		
 		<cfif ehXml.xmlName eq "event-handler">
-			<cfset makeEventHandler( modelglue:modelglue, ehXML:ehXml ) />
+			<cfset makeEventHandler( arguments.modelglue, ehXml ) />
 		</cfif>
-
 	</cfloop>
-</cffunction>	
+</cffunction>
 
 <cffunction name="hasEventHandlerDefinition" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="eventHandlerName" type="string" default="" />
+	
 	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
 	<cfset var i = "" />
+	
 	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
 		<cfif arrayLen( findEventHandlerDefinition(variables.parsedXMLArray[i], arguments.eventHandlerName ) ) GT 0>
 			<cfreturn true />
 		</cfif>
 	</cfloop>
 	
-	<cfreturn false />	
+	<cfreturn false />
 </cffunction>
 
 <cffunction name="findEventHandlerDefinition" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="parsedXMLConfig" type="any" required="true"/>
 	<cfargument name="eventHandlerName" type="string" default="" />
-	<cfreturn xmlSearch( arguments.parsedXMLConfig, "/modelglue/event-handlers/event-handler[@name='#arguments.eventHandlerName#']" )/>
+	
+	<cfreturn xmlSearch( arguments.parsedXMLConfig, "/modelglue/event-handlers/event-handler[@name='#arguments.eventHandlerName#']" ) />
 </cffunction>
 
 <cffunction name="locateAndMakeEventHandler" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="modelglue" />
 	<cfargument name="eventHandlerName" type="string" default="" />
+	
 	<cfset var eventHandlerDefinition = "" />
 	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
 	<cfset var i = "" />
 	<cfset var j = "" />
-	
+	<cfset var defaultType = "EventHandler" />
+	<cfset var ehXml = "" />
+
 	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
 		<cfset eventHandlerDefinitionArray = findEventHandlerDefinition(variables.parsedXMLArray[i], arguments.eventHandlerName ) />
 		
 		<cfloop from="1" to="#arrayLen( eventHandlerDefinitionArray)#" index="j">
-			<cfset makeEventHandler(arguments.modelglue, eventHandlerDefinitionArray[j] )  />
+			<cfset ehXml = eventHandlerDefinitionArray[j] />
+			
+			<cfif structKeyExists(ehXml.xmlParent.xmlAttributes, "defaultType")>
+				<cfset defaultType = ehXml.xmlParent.xmlAttributes.defaultType />
+			</cfif>
+			
+			<cfset makeEventHandler(arguments.modelglue, defaultType, ehXml) />
 		</cfloop>
 	</cfloop>
 </cffunction>
 
 <cffunction name="makeEventHandler" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="modelglue" />
-	<cfargument name="ehXML" type="string" required="true"/>
+	<cfargument name="defaultType" type="string" required="true" />
+	<cfargument name="ehXML" type="string" required="true" />
+	
 	<cfset var ehInst = "" />
 	<cfset var childXml = "" />
 	<cfset var ehFactory = arguments.modelglue.getInternalBean("modelglue.EventHandlerFactory") />
+	
 	<!--- existence of a single type key or a list causes this to be xml-defined typed event --->
-	<cfset var isXmlTypeList = false />
+	<cfset var isXmlType = false />
 	<cfset var i = "" />
+	<cfset var ehClass = "EventHandler">
+	
 	<!--- Make some sensible defaults --->
-	<cfparam name="arguments.handlersXML.XmlAttributes.defaultType" default="EventHandler" />
-	<cfparam name="arguments.ehXml.xmlAttributes.type" default="#arguments.handlersXML.XmlAttributes.defaultType#" />
+	<cfparam name="arguments.ehXml.xmlAttributes.type" default="#arguments.defaultType#" />
 	<cfparam name="arguments.ehXml.xmlAttributes.access" default="public" />
 	<cfparam name="arguments.ehXml.xmlAttributes.cache" default="false" />
 	<cfparam name="arguments.ehXml.xmlAttributes.cacheKey" default="" />
 	<cfparam name="arguments.ehXml.xmlAttributes.cacheKeyValues" default="" />
 	<cfparam name="arguments.ehXml.xmlAttributes.cacheTimeout" default="0" />
 	<cfparam name="arguments.ehXml.xmlAttributes.extensible" default="false" />
-	<cfset isXmlTypeList = structKeyExists(variables.eventTypes, arguments.ehXml.xmlAttributes.type) or find(",", arguments.ehXml.xmlAttributes.type) />
-
-		<cftry>
-			<!--- If the event-handler already exists, get a reference to it --->
-			<cfif arguments.modelglue.hasEventHandler(arguments.ehXml.xmlAttributes.name)>
-				<cfset ehInst =  this.eventHandlers[arguments.ehXml.xmlAttributes.name] />
+	
+	<cfset isXmlType = arguments.modelglue.hasEventType(arguments.ehXml.xmlAttributes.type) or find(",", arguments.ehXml.xmlAttributes.type) />
+	
+	<cftry>
+		<cfif not isXmlType>
+			<cfset ehClass = arguments.ehXml.xmlAttributes.type />
+		</cfif>
+		
+		<!--- If the event-handler already exists, get a reference to it --->
+		<cfif arguments.modelglue.hasEventHandler(arguments.ehXml.xmlAttributes.name)>
+			<cfset ehInst =  arguments.modelglue.eventHandlers[arguments.ehXml.xmlAttributes.name] />
+		</cfif>
+		
+		<!--- If the event-handler doesnt' exist, or it's not an "extensible" event-handler, create a new eh object--->
+		<cfif not arguments.modelglue.hasEventHandler(arguments.ehXml.xmlAttributes.name) or not ehInst.extensible>
+			<cfset ehInst = ehFactory.create(ehClass) />
+		</cfif>
+		
+		<!--- If the type class is not found, force a base EventHandler to be created --->
+		<cfcatch>
+			<cfset ehInst = ehFactory.create("EventHandler") />
+		</cfcatch>
+	</cftry>
+	
+	<cfset ehInst.beforeConfiguration() />
+	
+	<!--- If an XML-defined type is defined, load its "before" elements --->
+	<cfif isXmlType>
+		<cfset addTypedElementsToEventHandler(arguments.modelglue, "before", ehInst, arguments.ehXml.xmlAttributes.type) />
+	</cfif>
 				
-				<!--- If it's not an "extensible" event-handler, create a new eh object--->
-				<cfif not ehInst.extensible>
-					<cfset ehInst = ehFactory.create("EventHandler") />
-				</cfif>
-			<!--- Otherwise, try to instantiate the type. --->
-			<cfelse>
-				<cfset ehInst = ehFactory.create(arguments.ehXml.xmlAttributes.type) >
-			</cfif>
-			<!--- If the type is not found, force a base EventHandler to be created --->
-			<cfcatch>
-				<cfset ehInst = ehFactory.create("EventHandler") />
-			</cfcatch>
-		</cftry>
-		
-		<cfset ehInst.beforeConfiguration() />
-		
-		<!--- If an XML-defined type is defined, load its "before" elements --->
-		<cfif isXmlTypeList>
-			<cfset addTypedElementsToEventHandler("before", ehInst, arguments.ehXml.xmlAttributes.type) />
-		</cfif>
-					
-		<cfset ehInst.name = arguments.ehXml.xmlAttributes.name />
-		<cfset ehInst.access = arguments.ehXml.xmlAttributes.access />
-		
-		<cfif isBoolean(arguments.ehXml.xmlAttributes.cache)>
-			<cfset ehInst.cache = arguments.ehXml.xmlAttributes.cache />
-		</cfif>
-		<cfset ehInst.cacheKey = arguments.ehXml.xmlAttributes.cacheKey />
-		<cfset ehInst.cacheKeyValues = arguments.ehXml.xmlAttributes.cacheKeyValues />
-		<cfset ehInst.cacheTimeout = arguments.ehXml.xmlAttributes.cacheTimeout />
-		
-		<cfif len(ehInst.cache) and not len(ehInst.cacheKey)>
-			<cfset ehInst.cacheKey = "eventHandler." & ehInst.name />
-		</cfif>
+	<cfset ehInst.name = arguments.ehXml.xmlAttributes.name />
+	<cfset ehInst.access = arguments.ehXml.xmlAttributes.access />
+	
+	<cfif isBoolean(arguments.ehXml.xmlAttributes.cache)>
+		<cfset ehInst.cache = arguments.ehXml.xmlAttributes.cache />
+	</cfif>
+	<cfset ehInst.cacheKey = arguments.ehXml.xmlAttributes.cacheKey />
+	<cfset ehInst.cacheKeyValues = arguments.ehXml.xmlAttributes.cacheKeyValues />
+	<cfset ehInst.cacheTimeout = arguments.ehXml.xmlAttributes.cacheTimeout />
+	
+	<cfif len(ehInst.cache) and not len(ehInst.cacheKey)>
+		<cfset ehInst.cacheKey = "eventHandler." & ehInst.name />
+	</cfif>
 
-		<cfif isBoolean(arguments.ehXml.xmlAttributes.extensible)>
-			<cfset ehInst.extensible = arguments.ehXml.xmlAttributes.extensible />
-		</cfif>
-		
-		<!--- Load messages --->
-		<cfset childXml = xmlSearch(arguments.ehXml, "broadcasts") />
-		
-		<cfloop from="1" to="#arrayLen(childXml)#" index="i">
-			<cfset loadMessages(ehInst, childXml[i]) />
-			<cfset loadControllersForBroadcastXML( arguments.modelglue, childXml[i] ) />
-		</cfloop>
-		
-		<!--- Load results --->
-		<cfset childXml = xmlSearch(arguments.ehXml, "results") />
-		
-		<cfloop from="1" to="#arrayLen(childXml)#" index="i">
-			<cfset loadResults(ehInst, childXml[i]) />
-		</cfloop>
-		
-		
-		<!--- Load views --->
-		<cfset childXml = xmlSearch(arguments.ehXml, "views") />
-		
-		<cfloop from="1" to="#arrayLen(childXml)#" index="i">
-			<cfset loadViews(ehInst, childXml[i]) />
-		</cfloop>
-		
-		<cfset ehInst.afterConfiguration() />
+	<cfif isBoolean(arguments.ehXml.xmlAttributes.extensible)>
+		<cfset ehInst.extensible = arguments.ehXml.xmlAttributes.extensible />
+	</cfif>
+	
+	<!--- Load messages --->
+	<cfset childXml = xmlSearch(arguments.ehXml, "broadcasts") />
+	
+	<cfloop from="1" to="#arrayLen(childXml)#" index="i">
+		<cfset loadMessages(ehInst, childXml[i]) />
+		<cfset loadControllersForBroadcastXML( arguments.modelglue, childXml[i] ) />
+	</cfloop>
+	
+	<!--- Load results --->
+	<cfset childXml = xmlSearch(arguments.ehXml, "results") />
+	
+	<cfloop from="1" to="#arrayLen(childXml)#" index="i">
+		<cfset loadResults(arguments.modelglue, ehInst, childXml[i]) />
+	</cfloop>
+	
+	<!--- Load views --->
+	<cfset childXml = xmlSearch(arguments.ehXml, "views") />
+	
+	<cfloop from="1" to="#arrayLen(childXml)#" index="i">
+		<cfset loadViews(ehInst, childXml[i]) />
+	</cfloop>
+	
+	<cfset ehInst.afterConfiguration() />
 
-		<!--- If an XML-defined type is defined, load its "after" elements --->
-		<cfif isXmlTypeList>
-			<cfset addTypedElementsToEventHandler("after", ehInst, arguments.ehXml.xmlAttributes.type) />
-		</cfif>
+	<!--- If an XML-defined type is defined, load its "after" elements --->
+	<cfif isXmlType>
+		<cfset addTypedElementsToEventHandler(arguments.modelglue, "after", ehInst, arguments.ehXml.xmlAttributes.type) />
+	</cfif>
 
 	<cfset arguments.modelglue.addEventHandler(ehInst) />
+</cffunction>
 
-</cffunction>	
-
+<cffunction name="addTypedElementsToEventHandler" output="false" hint="Loads a block (before/after) from an XML event type into an event handler">
+	<cfargument name="modelglue" />
+	<cfargument name="block" hint="Before/after" />
+	<cfargument name="eh" hint="Event handler instance" />
+	<cfargument name="types" hint="List of types" />
+	
+	<cfset var typename = "" />
+	<cfset var moduleBlock = "" />
+	<cfset var i = "" />
+	
+	<cfloop list="#arguments.types#" index="typename">
+		<cfif arguments.modelglue.hasEventType(typeName)>
+			<cfset moduleBlock = arguments.modelglue.eventTypes[typeName][block] />
+			
+			<!--- Load any broadcasts if we have any  and respect the possibility of multiple views blocks (like for requestformats ). --->
+			<cfif structKeyExists(moduleBlock, "broadcasts") IS true>
+				<cfloop from="1" to="#arrayLen(moduleBlock.broadcasts)#" index="i">
+					<cfset loadMessages(eh, moduleBlock.broadcasts[i]) />
+				</cfloop>
+			</cfif>
+			
+			<!--- Load any results if we have any  and respect the possibility of multiple views blocks (like for requestformats ) --->
+			<cfif structKeyExists(moduleBlock, "results") IS true>
+				<cfloop from="1" to="#arrayLen(moduleBlock.results)#" index="i">
+					<cfset loadResults(arguments.modelglue, eh, moduleBlock.results[i]) />
+				</cfloop>
+			</cfif>
+			
+			<!--- Load any views if we have any and respect the possibility of multiple views blocks (like for requestformats ) --->
+			<cfif structKeyExists(moduleBlock, "views") IS true>
+				<cfloop from="1" to="#arrayLen(moduleBlock.views)#" index="i">
+					<cfset loadViews(eh, moduleBlock.views[i]) />
+				</cfloop>
+			</cfif>
+		</cfif>
+	</cfloop>
+</cffunction>
 
 <cffunction name="loadMessages" output="false" hint="Loads messages from a <broadcasts> block into an event handler.">
 	<cfargument name="eventHandler" />
@@ -378,7 +495,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfset var argXml = "" />
 	<cfset var i = "" />
 	<cfset var j = "" />
-	
 	
 	<cfloop from="1" to="#arrayLen(arguments.broadcastsXml.xmlChildren)#" index="i">
 		<cfset msgXml = arguments.broadcastsXml.xmlChildren[i] />
@@ -399,6 +515,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 </cffunction>
 
 <cffunction name="loadResults" output="false" hint="Loads results from a <results> block into an event handler.">
+	<cfargument name="modelglue" />
 	<cfargument name="eventHandler" />
 	<cfargument name="resultsXml" />
 
@@ -407,7 +524,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfset var argXml = "" />
 	<cfset var i = "" />
 	<cfset var j = "" />
-	
 	
 	<cfloop from="1" to="#arrayLen(arguments.resultsXml.xmlChildren)#" index="i">
 		<cfset resXml = arguments.resultsXml.xmlChildren[i] />
@@ -421,10 +537,11 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 			<cfswitch expression="#j#">
 				<cfcase value="do">
 					<cfset resInst.event = resXml.xmlAttributes[j] />
+					<cfset locateAndMakeEventHandler(arguments.modelglue, resInst.event)>
 				</cfcase>
 				<cfcase value="redirect,preserveState">
 					<cfif not isBoolean(resXml.xmlAttributes[j])>
-						<cfthrow message="Error adding results for event handler ""#eventHandler.name#"": On a result tag, #j# must be a true/false value!" />						
+						<cfthrow message="Error adding results for event handler ""#eventHandler.name#"": On a result tag, #j# must be a true/false value!" />
 					</cfif>
 					<cfset resInst[j] = resXml.xmlAttributes[j] />
 				</cfcase>
@@ -461,7 +578,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 				Now, if it's detected and set to the old ChiliBeans loader (which 
 				doesn't even exist anymore!), we shift the IoC adapter to the
 				ChiliBeansAdapter.
-			---> 
+			--->
 			<cfcase value="beanFactoryLoader">
 				<cfif settingXml.xmlAttributes.value eq "ModelGlue.Core.ChiliBeansLoader">
 					<cfset iocAdapter = arguments.modelGlue.getIocAdapter() />
@@ -471,7 +588,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 						<cfset iocAdapter = createObject("component", "ModelGlue.gesture.externaladapters.ioc.ChiliBeansAdapter").init("") />
 						<cfset arguments.modelglue.setIocAdapter(iocAdapter) />
 					</cfif>
-			<!--- Check for legacy applications switching from ChiliBeans to ColdSpring ---> 
+			<!--- Check for legacy applications switching from ChiliBeans to ColdSpring --->
 				<cfelseif settingXml.xmlAttributes.value eq "ModelGlue.Core.ColdSpringLoader">
 					<cfset iocAdapter = arguments.modelGlue.getIocAdapter() />
 					
@@ -518,16 +635,14 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 					<cfif not ListFindNoCase(arguments.modelglue.configuration.helperMappings, tmpArray[j])>
 						<cfset arguments.modelglue.configuration.helperMappings = listAppend( arguments.modelglue.configuration.helperMappings,  tmpArray[j] ) />
 					</cfif>
-				</cfloop>			
+				</cfloop>
 			</cfcase>
 			<cfdefaultcase>
 				<cfset arguments.modelglue.setConfigSetting(settingXml.xmlAttributes.name, settingXml.xmlAttributes.value) />
 			</cfdefaultcase>
 		</cfswitch>
-
 	</cfloop>
-		
-</cffunction>	
+</cffunction>
 
 <cffunction name="loadViews" output="false" hint="Loads views from a <views> block into an event handler.">
 	<cfargument name="eventHandler" />
@@ -577,7 +692,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 
 			<cfif structKeyExists(valueXml.xmlAttributes, "overwrite")>
 				<cfif not isBoolean(valueXml.xmlAttributes.overwrite)>
-					<cfthrow message="Error adding view for event handler ""#eventHandler.name#"": On a view tag, overwrite must be a true/false value!" />						
+					<cfthrow message="Error adding view for event handler ""#eventHandler.name#"": On a view tag, overwrite must be a true/false value!" />
 				</cfif>
 				<cfset valueInst.overwrite = valueXml.xmlAttributes.overwrite />
 			</cfif>
@@ -586,9 +701,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 		</cfloop>
 
 		<cfset arguments.eventHandler.addView(viewInst) />
-
 	</cfloop>
-</cffunction>	
-
+</cffunction>
 
 </cfcomponent>
