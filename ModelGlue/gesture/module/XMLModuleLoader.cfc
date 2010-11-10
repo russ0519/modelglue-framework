@@ -168,14 +168,12 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	
 	<cfloop from="1" to="#arrayLen(arguments.broadcastsXml.xmlChildren)#" index="i">
 		<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="j">
-			<cfset controllerDefinitionArray =  xmlSearch( variables.parsedXMLArray[j], "/modelglue/controllers/controller" ) />
-		
+			<cfset controllerDefinitionArray = xmlSearch(variables.parsedXMLArray[j], "/modelglue/controllers/controller[message-listener[@message='#arguments.broadcastsXml.xmlChildren[i].xmlAttributes.name#']]")>
+			
 			<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="k">
-				<cfif arrayLen( xmlSearch( controllerDefinitionArray[k], "/modelglue/controllers/controller/message-listener[@message='#arguments.broadcastsXml.xmlChildren[i].xmlAttributes.name#']" ) ) GT 0>
-					<cfparam name="controllerDefinitionArray[k].xmlAttributes.id" default="#controllerDefinitionArray[k].xmlAttributes.type#" />
-					<cfif arguments.modelglue.controllerIsAlreadyLoaded( controllerDefinitionArray[k].XmlAttributes.id ) IS false>
-						<cfset makeController(arguments.modelglue, controllerDefinitionArray[k] ) />
-					</cfif>
+				<cfparam name="controllerDefinitionArray[k].xmlAttributes.id" default="#controllerDefinitionArray[k].xmlAttributes.type#" />
+				<cfif arguments.modelglue.controllerIsAlreadyLoaded( controllerDefinitionArray[k].XmlAttributes.id ) IS false>
+					<cfset makeController(arguments.modelglue, controllerDefinitionArray[k] ) />
 				</cfif>
 			</cfloop>
 		</cfloop>
