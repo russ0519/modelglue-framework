@@ -234,12 +234,13 @@
 		<cfset ehTracker = ehTracker + 1>
 	</cfloop>
 
-	<!--- If we need to signal completion, do so. --->
-	<cfif structKeyExists(arguments, "signalCompletion")
-				and structKeyExists(variables._eventHandlers, "modelGlue.onQueueComplete")		
-	>
+	<!--- If we need to signal completion, do so. First try to find the onQueueComplete event in the event handlers struct (for speed). --->
+	<cfif structKeyExists(arguments, "signalCompletion") and structKeyExists(variables._eventHandlers, "modelGlue.onQueueComplete")>
 		<cfset executeEventHandler(variables._eventHandlers["modelglue.onQueueComplete"]) />
-	</cfif>	
+	<!--- If it's not there, use the hasEventHandler/getEventHandler methods to support lazy loading. --->
+	<cfelseif structKeyExists(arguments, "signalCompletion") and variables._modelGlue.hasEventHandler("modelGlue.onQueueComplete")>
+		<cfset executeEventHandler(variables._modelGlue.getEventHandler("modelglue.onQueueComplete")) />
+	</cfif>
 	
 	<!--- Render all views queued - moved inline after tooling heavy load situations.
 	<cfif not isSimpleValue(variables._nextView)>

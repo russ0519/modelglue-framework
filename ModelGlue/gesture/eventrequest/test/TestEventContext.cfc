@@ -611,6 +611,41 @@
 	<cfset structClear(url) />
 </cffunction>
 
+<!--- INTERNAL EVENT EXECUTION TESTS --->
+<cffunction name="testInternalEventExecution" returntype="void" access="public">
+	<cfset var mg = createModelGlue(this.coldspringPath) />
+	<cfset var ec = "" />
+	
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/internalEvents.xml")>
+	
+	<cfset structClear(url) />
+	
+	<cfset ec = mg.handleRequest() />
+	
+	<cfset assertTrue( ec.exists("onRequestStart"), "The internal onRequestStart function was not invoked" ) />
+	<cfset assertTrue( ec.exists("onQueueComplete"), "The internal onQueueComplete function was not invoked" ) />
+	<cfset assertTrue( ec.exists("onRequestEnd"), "The internal onRequestEnd function was not invoked" ) />
+	
+	<cfset structClear(url) />
+</cffunction>
+
+<cffunction name="testInternalEventsExecuteOnce" returntype="void" access="public">
+	<cfset var mg = createModelGlue(this.coldspringPath) />
+	<cfset var ec = "" />
+	
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/internalEvents.xml")>
+	
+	<cfset structClear(url) />
+	
+	<cfset ec = mg.handleRequest() />
+	
+	<cfset assertEquals( 1, ec.getValue("onRequestStartCount"), "The internal onRequestStart function was invoked #ec.getValue('onRequestStartCount')# times" ) />
+	<cfset assertEquals( 1, ec.getValue("onQueueCompleteCount"), "The internal onQueueComplete function was invoked #ec.getValue('onQueueCompleteCount')# times" ) />
+	<cfset assertEquals( 1, ec.getValue("onRequestEndCount"), "The internal onRequestEnd function was invoked #ec.getValue('onRequestEndCount')# times" ) />
+	
+	<cfset structClear(url) />
+</cffunction>
+
 <!--- EVENT HANDLER EXTENSIBILITY TEST --->
 <cffunction name="testEventHandlerExtensibility" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
@@ -624,6 +659,46 @@
 	
 	<cfset assertTrue( ec.exists("onRequestStart"), "The internal onRequestStart function was not invoked" ) />
 	<cfset assertTrue( ec.exists("customOnRequestStart"), "The custom onRequestStart function was not invoked" ) />
+	
+	<cfset structClear(url) />
+</cffunction>
+
+<!--- CASE SENSITIVITY TESTS --->
+<cffunction name="testMessageListenerCaseSensitivity" returntype="void" access="public">
+	<cfset var mg = createModelGlue(this.coldspringPath) />
+	<cfset var ec = "" />
+	
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/caseSensitivity.xml")>
+	
+	<cfset structClear(url) />
+	
+	<cfset ec = mg.handleRequest() />
+	
+	<cfset assertTrue( ec.exists("caseTest"), "The caseTest function was not invoked" ) />
+	
+	<cfset structClear(url) />
+</cffunction>
+
+<cffunction name="testEventHandlerCaseSensitivity" returntype="void" access="public">
+	<cfset var mg = createModelGlue(this.coldspringPath) />
+	<cfset var ec = "" />
+	<cfset var handlerName = "" />
+	
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/eventrequest/test/caseSensitivity.xml")>
+	
+	<cfset structClear(url) />
+	
+	<cfset url.event = "HOME" />
+	
+	<cftry>
+		<cfset ec = mg.handleRequest() />
+		<cfset handlerName = ec.getInitialEventHandlerName() />
+		
+		<!--- Empty catch to prevent exception if event handler is not found --->
+		<cfcatch></cfcatch>
+	</cftry>
+	
+	<cfset assertEquals( "home", handlerName, "The ""home"" event handler was not found" ) />
 	
 	<cfset structClear(url) />
 </cffunction>

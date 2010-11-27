@@ -104,6 +104,10 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 
 	<cffile action="read" file="#arguments.path#" variable="xml" />
 
+	<!--- Regex replace used to remove any attributes from the modelglue XML node,
+		as xmlSearch calls will return empty results if schema validation fails --->
+	<cfset xml = REReplaceNoCase(xml, "<modelglue[^>]+>", "<modelglue>", "all") />
+
 	<!--- 
 		We don't wrap this in a try / catch:  the native XML parsing exception can be helpful in
 		figuring out what is wrong.
@@ -168,7 +172,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	
 	<cfloop from="1" to="#arrayLen(arguments.broadcastsXml.xmlChildren)#" index="i">
 		<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="j">
-			<cfset controllerDefinitionArray = xmlSearch(variables.parsedXMLArray[j], "/modelglue/controllers/controller[message-listener[@message='#arguments.broadcastsXml.xmlChildren[i].xmlAttributes.name#']]")>
+			<cfset controllerDefinitionArray = xmlSearch(variables.parsedXMLArray[j], "/modelglue/controllers/controller[message-listener[translate(@message, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = '#lCase(arguments.broadcastsXml.xmlChildren[i].xmlAttributes.name)#']]")>
 			
 			<cfloop from="1" to="#arrayLen( controllerDefinitionArray )#" index="k">
 				<cfparam name="controllerDefinitionArray[k].xmlAttributes.id" default="#controllerDefinitionArray[k].xmlAttributes.type#" />
@@ -314,7 +318,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfargument name="parsedXMLConfig" type="any" required="true"/>
 	<cfargument name="eventHandlerName" type="string" default="" />
 	
-	<cfreturn xmlSearch( arguments.parsedXMLConfig, "/modelglue/event-handlers/event-handler[@name='#arguments.eventHandlerName#']" ) />
+	<cfreturn xmlSearch( arguments.parsedXMLConfig, "/modelglue/event-handlers/event-handler[translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = '#lCase(arguments.eventHandlerName)#']" ) />
 </cffunction>
 
 <cffunction name="locateAndMakeEventHandler" output="false" hint="Loads event-handlers from <event-handlers> block.">
