@@ -706,4 +706,71 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	</cfloop>
 </cffunction>
 
+<cffunction name="getScaffoldBlocks" output="false" returntype="array" hint="I return an array of XML nodes for any scaffold tags found">
+	<cfset var xmlIndex = 0 />
+	<cfset var scaffoldIndex = 0 />
+	<cfset var scaffolds = arrayNew(1) />
+	<cfset var allScaffolds = arrayNew(1) />
+	
+	<cfloop from="1" to="#arrayLen(variables.parsedXMLArray)#" index="xmlIndex">
+		<cfset scaffolds = xmlSearch(variables.parsedXMLArray[xmlIndex], "//scaffold") />
+		
+		<cfif arrayLen(scaffolds)>
+			<cfloop from="1" to="#arrayLen(scaffolds)#" index="scaffoldIndex">
+				<cfset arrayAppend(allScaffolds, scaffolds[scaffoldIndex]) />
+			</cfloop>
+		</cfif>
+	</cfloop>
+	
+	<cfreturn allScaffolds />
+</cffunction>
+
+<cffunction name="loadScaffolds" output="false" hint="I load the scaffold tags">
+	<cfargument name="modelglue" />
+	
+	<cfset var scaffoldsXML = getScaffoldBlocks() />
+	<cfset var scaffoldsArray = arrayNew(1) />
+	<cfset var objectMetadata = "" />
+	<cfset var i = 0 />
+	<cfset var iType = "" />
+	<cfset var S = "" />
+	
+	<!--- As the great Bob Marley said, no scaffolds, no problem mon --->
+	<cfif arrayLen( scaffoldsXML ) IS 0>
+		<cfreturn />
+	</cfif>
+	
+	<!---OK, we have scaffolds, so rip over them--->
+	<cfloop from="1" to="#arrayLen( scaffoldsXML )#" index="i">
+		<!---  we'll store metadata in a struct for now --->
+		<cfset objectMetadata = structNew() />
+		<cfset objectMetadata = scaffoldsXML[i].XmlAttributes />
+		
+		<!--- default the types to the configured defaultscaffolds --->
+		<cfparam name="objectmetadata.type" default="#arguments.modelglue.getConfigSetting('defaultScaffolds')#" />
+		<cfparam name="objectmetadata.propertylist" default="" />
+		<cfparam name="objectmetadata['event-type']" default="" />
+		
+		<cfloop list="#objectmetadata.type#" index="iType">
+			<cfset S =createObject("component", "ModelGlue.gesture.eventhandler.Scaffold") /> 
+			
+			<!--- now make a seperate object for each type --->
+			<cfset S.object = objectMetadata.object />
+			<cfset S.type = iType />
+			<cfset S.propertylist = objectmetadata.propertylist />
+			<cfset S.eventType = objectMetadata["event-type"] />
+			<cfset S.childXML = scaffoldsXML[i].XmlChildren />
+			
+			<!--- then store the metadata in the scaffolds array --->
+			<cfset arrayAppend( scaffoldsArray, S) />
+		</cfloop>
+	</cfloop>
+	
+	<cfset arguments.modelglue.getScaffoldManager().generate( scaffoldsArray ) />
+	
+	<cfif fileExists( expandPath( arguments.modelglue.getConfigSetting('scaffoldPath') ) ) IS true>
+		<cfset load( arguments.modelglue, expandPath( arguments.modelglue.getConfigSetting('scaffoldPath') ) ) />
+	</cfif>
+</cffunction>
+
 </cfcomponent>

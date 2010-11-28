@@ -243,7 +243,7 @@
 		<cfreturn ('<?xml version="1.0" encoding="UTF-8"?>
 <!-- Warning! This file is generated and will be overwritten whenever ModelGlue feels like it. Do Not Make Your Customizations Here!-->
 <modelglue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-			xsi:noNamespaceSchemaLocation="http://www.model-glue.com/schema/gesture/ModelGlue-strict.xsd">
+			xsi:noNamespaceSchemaLocation="http://www.model-glue.com/schema/gesture/ModelGlue.xsd">
 
 	<event-handlers>
 ') />
