@@ -21,8 +21,8 @@
 		<cfreturn this />
 	</cffunction>
 	
-	<cffunction name="addScaffoldTemplate" output="false" access="public" returntype="struct" hint="I add a scaffolding bean configuration to the known scaffolding beans">
-		<cfargument name="scaffoldBeanRegistry" type="struct" required="true"/>
+	<cffunction name="addScaffoldTemplate" output="false" access="public" returntype="array" hint="I add a scaffolding bean configuration to the known scaffolding beans">
+		<cfargument name="scaffoldBeanRegistry" type="array" required="true"/>
 		<cfset var unpackedRegistry = unwind( arguments.scaffoldBeanRegistry )>
 		<cfset var thisTemplate= "" />
 		<cfloop collection="#unpackedRegistry#" item="thisTemplate">
