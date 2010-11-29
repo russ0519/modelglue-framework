@@ -16,6 +16,9 @@
 <cffunction name="testLoading" returntype="void" access="public">
 	<cfset var mg = createModelGlue(this.coldspringPath) />
 	<cfset var loader = "" />
+	<cfset var ctrl = "" />	
+	<cfset var obj  = "" />
+	<cfset var controllerVars = "" />
 	<cfset mg.getInternalBeanFactory().loadBeans(expandPath("/ModelGlue/gesture/externaladapters/beaninjection/test/ColdSpring.xml")) />
 	<cfset mg.getInternalBeanFactory().loadBeans(expandPath( this.coldSpringPath )) />
 	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
@@ -78,7 +81,8 @@
 	<cfset var loader = "" />
 	<cfset var obj = "" />
 	<cfset var beanFactory = "" />
-	
+	<cfset var ctrl = "" />
+		
 	<cfset beanFactory = mg.getInternalBeanFactory() />	
 	<cfset beanFactory.loadBeans(expandPath("/ModelGlue/gesture/externaladapters/beaninjection/test/ColdSpring.xml")) />
 	<cfset loader = mg.getInternalBean("modelglue.ModuleLoaderFactory").create("XML") />
@@ -96,6 +100,7 @@
 	<cfset var loader = "" />
 	<cfset var obj = "" />
 	<cfset var beanFactory = "" />
+	<cfset var ctrl = "" />
 	
 	<cfset beanFactory = mg.getInternalBeanFactory() />
 	<cfset beanFactory.loadBeans(expandPath("/ModelGlue/gesture/externaladapters/beaninjection/test/ColdSpring.xml")) />

@@ -27,7 +27,9 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	
 	<cfset var moduleLoaderFactory = modelglue.getInternalBean("modelglue.ModuleLoaderFactory") />
 	<cfset var parsedXML = "" />
+	<cfset var settingBlocks = "" />
 	<cfset var etBlocks = "" />
+	<cfset var loader = "" />
 	<cfset var modules = "" />
 	<cfset var includes = "" />
 	<cfset var i = "" />
@@ -325,7 +327,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfargument name="modelglue" />
 	<cfargument name="eventHandlerName" type="string" default="" />
 	
-	<cfset var eventHandlerDefinition = "" />
+	<cfset var eventHandlerDefinitionArray = "" />
 	<cfset var NumberOfParsedXMLConfigs = arrayLen( variables.parsedXMLArray ) />
 	<cfset var i = "" />
 	<cfset var j = "" />

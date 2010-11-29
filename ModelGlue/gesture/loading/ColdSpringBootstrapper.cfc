@@ -97,7 +97,7 @@
 
 <cffunction name="createModelGlue" output="false" hint="Creates and sets configuration into an instance of ModelGlue.cfc (created from ColdSpring definition).">
 	<cfset var bf = createBeanFactory() />
-	<cfset mg = bf.getBean(this.modelGlueBeanName) />
+	<cfset var mg = bf.getBean(this.modelGlueBeanName) />
 	<cfset mg.setInternalBeanFactory(bf) />
 	
 	<!--- Inject version indicator into Model-Glue to allow the framework to support legacy behaviours --->

@@ -24,6 +24,8 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfset var parsedXML = "" />
 	<cfset var modules = "" />
 	<cfset var includes = "" />
+	<cfset var loader = "" />
+	<cfset var settingBlocks = "" />
 	<cfset var i = "" />
 	<!---<cfif structKeyExists( variables.hydrateImmediately, arguments.path) IS true AND structKeyExists(loadedModules, arguments.path) IS false>--->
 		<!--- We want to use the XML Model Loader to process this immediately so we have a fully up and running Model Glue (I think) --->
@@ -216,7 +218,8 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 <cffunction name="locateAndMakeEventHandler" output="false" hint="Loads event-handlers from <event-handlers> block.">
 	<cfargument name="modelglue" />
 	<cfargument name="eventHandlerName" type="string" default="" />
-	<cfset var eventHandlerDefinition = "" />
+	<cfset var eventHandlerDefinitionArray = "" />
+	<cfset var j = "" />
 	
 	<!--- Since the last one loaded wins, let's start from the end --->
 	<cfset eventHandlerDefinitionArray = findEventHandlerDefinition(variables.parsedXML, arguments.eventHandlerName ) />
