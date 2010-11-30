@@ -130,6 +130,21 @@
 	<!--- Not going into an infinite loop = passing. --->	
 </cffunction>
 
+<cffunction name="testRecursiveResultLoading" returntype="void" access="public">
+	<cfset var mg = createModelGlue(this.coldspringPath) />
+	<cfset var ec = "" />
+	
+	<cfset mg.setConfigSetting("primaryModule", "/ModelGlue/gesture/module/test/recursiveResultModule.xml")>
+	
+	<cfset structClear(url) />
+	
+	<cfset ec = mg.handleRequest() />
+	
+	<cfset structClear(url) />
+	
+	<!--- Not going into an infinite loop = passing. --->
+</cffunction>
+
 <cffunction name="testSettingParsing_arbitrary" returntype="void" access="public">
 	<cfset var mg = createModelGlueIfNotDefined(this.coldspringPath) />
 	<cfset var loader = "" />

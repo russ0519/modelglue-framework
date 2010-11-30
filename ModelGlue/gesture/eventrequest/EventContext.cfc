@@ -365,7 +365,12 @@
 						<cfset forward(eventName:result.event, preserveState:result.preserveState, addToken:false, append:result.append, anchor:result.anchor) />
 					<cfelse>
 						<cfset this.addTraceStatement("Result", "Explicit result ""#result.name#"" added, queueing event event ""#result.event#""", "<result name=""#result.name#"" do=""#result.event#"" />") /> 
-						<cfset addEventHandler(variables._eventHandlers[arguments.eventHandler.results[results[i]][j].event]) />
+						<cfif structKeyExists( variables._eventHandlers, arguments.eventHandler.results[results[i]][j].event ) IS true>
+							<cfset nextEvent = variables._eventHandlers[ arguments.eventHandler.results[results[i]][j].event ] />
+						<cfelse>
+							<cfset nextEvent = variables._modelGlue.getEventHandler( arguments.eventHandler.results[results[i]][j].event ) />
+						</cfif>
+						<cfset addEventHandler( nextEvent ) />
 					</cfif>
 					
 				</cfif>
@@ -387,10 +392,10 @@
 						<cfset forward(eventName:result.event, preserveState:result.preserveState, addToken:false, append:result.append, anchor:result.anchor) />
 					<cfelse>
 						<cfset this.addTraceStatement("Result", "Implicit result queing event ""#result.event#""", "<result do=""#result.event#"" />") /> 
-						<cfif structKeyExists(variables._eventHandlers, results[i].event ) IS true>
+						<cfif structKeyExists( variables._eventHandlers, results[i].event ) IS true>
 							<cfset nextEvent = variables._eventHandlers[ results[i].event ] />
 						<cfelse>
-							<cfset nextEvent = variables._modelGlue.getEventHandler( results[i].event) />
+							<cfset nextEvent = variables._modelGlue.getEventHandler( results[i].event ) />
 						</cfif>
 						<cfset addEventHandler( nextEvent ) />
 					</cfif>

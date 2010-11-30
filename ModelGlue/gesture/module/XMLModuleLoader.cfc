@@ -337,7 +337,7 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 	<cfloop from="1" to="#NumberOfParsedXMLConfigs#" index="i">
 		<cfset eventHandlerDefinitionArray = findEventHandlerDefinition(variables.parsedXMLArray[i], arguments.eventHandlerName ) />
 		
-		<cfloop from="1" to="#arrayLen( eventHandlerDefinitionArray)#" index="j">
+		<cfloop from="1" to="#arrayLen(eventHandlerDefinitionArray)#" index="j">
 			<cfset ehXml = eventHandlerDefinitionArray[j] />
 			
 			<cfif structKeyExists(ehXml.xmlParent.xmlAttributes, "defaultType")>
@@ -541,7 +541,6 @@ Lastly, we need to rip out the configuration for this ModuleLoader and just have
 			<cfswitch expression="#j#">
 				<cfcase value="do">
 					<cfset resInst.event = resXml.xmlAttributes[j] />
-					<cfset locateAndMakeEventHandler(arguments.modelglue, resInst.event)>
 				</cfcase>
 				<cfcase value="redirect,preserveState">
 					<cfif not isBoolean(resXml.xmlAttributes[j])>
