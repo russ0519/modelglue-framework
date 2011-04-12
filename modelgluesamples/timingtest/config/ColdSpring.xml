@@ -15,16 +15,18 @@
 	<property name="missingEvent"><value>page.missing</value></property>
 	<!-- Execute this event when an error occurs. -->
 	<property name="defaultExceptionHandler"><value>page.error</value></property>
+	<!-- Default template -->
+	<property name="defaultTemplate"><value>${defaultTemplate}</value></property>
 	
 	<!-- Controls reloading -->
 	<property name="reloadPassword"><value>true</value></property>
 	<property name="reloadKey"><value>init</value></property>
 
 	<!-- Where to find necessary files -->
-	<property name="configurationPath"><value>config/ModelGlue.xml</value></property>
+	<property name="configurationPath"><value>${modelglueXmlPath}</value></property>
 	<property name="applicationMapping"><value>/</value></property>
-	<property name="viewMappings"><value>/views,/views/generated</value></property>
-	<property name="helperMappings"><value>/helpers</value></property>
+	<property name="viewMappings"><value>/timingTest/views,/timingTest/views/generated</value></property>
+	<property name="helperMappings"><value>/timingTest/helpers</value></property>
 	<property name="assetMappings"><value>/modelglueextensions/jQuery</value></property>
 	
 	<!-- Generate unknown events when in development mode?  (reload=false) -->
@@ -37,7 +39,7 @@
 	<!-- Turning this off will disable any scaffold generation. Turning this on requires the reload setting above to also be on.-->	
 	<property name="rescaffold"><value>true</value></property>
 	<!-- Where do you want generated views to be saved to? -->
-	<property name="generatedViewMapping"><value>/views/generated</value></property>
+	<property name="generatedViewMapping"><value>/timingTest/views/generated</value></property>
 	<!--This directory structure should already exists. ModelGlue will create the Scaffolds.xml file and overwrite as needed.-->
 	<property name="scaffoldPath"><value>config/scaffolds/Scaffolds.xml</value></property>
 	<!-- What scaffold generation patterns should ModelGlue use if you do not specify in the <scaffold type=""> attribute? .-->

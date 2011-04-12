@@ -1,7 +1,7 @@
 <cfsilent>
 
 <!--- Number of additional controllers and event handlers to load for this test --->
-<cfset request.numControllers = 0 />
+<cfset request.numControllers = 100 />
 <cfset request.numEventHandlers = 0 />
 
 <!--- Define a key for the framework that won't conflict with the other tests in this suite ---> 
