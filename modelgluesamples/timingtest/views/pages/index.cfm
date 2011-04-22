@@ -8,10 +8,12 @@
 
 <cfoutput>
 
+	<h2>#GetFileFromPath(GetBaseTemplatePath())#</h2>
 	<p>
-		<b>#event.getEventHandlerName()#</b><br>
 		Number of Additional Controllers: #request.numControllers#<br>
 		Number of Additional Event Handlers: #request.numEventHandlers#<br>
+		<br>
+		<b>#event.getEventHandlerName()#</b><br>
 		Number of 'needSomething' Listener Invocations: #event.getValue('listenCount','0')#<br>
 		Start time: #request.startTime# <br>
 		End time: #endTime#<br>
@@ -19,9 +21,10 @@
 	</p>
 
 	<p>
-		<a href="#event.linkTo('page.broadcast')#">Test Broadcast Event</a>
-		| <a href="#event.linkTo('page.index')#">Reload Home Page</a>
-		| <a href="#event.linkTo('page.index','init')#">Reload Application</a>
+		<a href="#event.linkTo('page.broadcast')#">Test Broadcast</a>
+		| <a href="#event.linkTo('page.index')#">Test Home</a>
+		| <a href="#event.linkTo('page.index','init')#">Reload Test App</a>
+		| <a href="index.cfm">Test Suite Home</a>
 	</p>
 	
 	<table cellspacing="5" cellpadding="5">

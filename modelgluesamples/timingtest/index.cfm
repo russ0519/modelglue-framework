@@ -1,15 +1,23 @@
-<cfsilent>
+<html>
 
-<!--- Number of additional controllers and event handlers to load for this test --->
-<cfset request.numControllers = 0 />
-<cfset request.numEventHandlers = 0 />
+<head>
+	<title>Model-Glue Timing Test Suite</title>
+	<link rel="stylesheet" type="text/css" href="css/stylesheet.css"></link>
+</head>
 
-<!--- Define a key for the framework that won't conflict with the other tests in this suite ---> 
-<cfset ModelGlue_APP_KEY = "c#request.numControllers#_eh#request.numEventHandlers#" />
+<body>
+	<h1>Model-Glue Timing Test Suite</h1>
+	
+	<a href="index_c0_eh0.cfm">Timing Test 1: 0 additional controllers, 0 additional event handlers</a><br>
+	<a href="index_c0_eh100.cfm">Timing Test 2: 0 additional controllers, 100 additional event handlers</a><br>
+	<a href="index_c0_eh1000.cfm">Timing Test 3: 0 additional controllers, 1000 additional event handlers</a><br>
+	<a href="index_c100_eh0.cfm">Timing Test 4: 100 additional controllers, 0 additional event handlers</a><br>
+	<a href="index_c100_eh100.cfm">Timing Test 5: 100 additional controllers, 100 additional event handlers</a><br>
+	<a href="index_c100_eh1000.cfm">Timing Test 6: 100 additional controllers, 1000 additional event handlers</a><br>
+	<a href="index_c1000_eh0.cfm">Timing Test 7: 1000 additional controllers, 0 additional event handlers</a><br>
+	<a href="index_c1000_eh100.cfm">Timing Test 8: 1000 additional controllers, 100 additional event handlers</a><br>
+	<a href="index_c1000_eh1000.cfm">Timing Test 9: 1000 additional controllers, 1000 additional event handlers</a><br>
+		
+</body>
 
-<!--- Configure framework with a custom ModelGlue.xml path and index.cfm that corresponds to this test --->
-<cfset ModelGlue_LOCAL_COLDSPRING_DEFAULT_PROPERTIES = StructNew() />
-<cfset ModelGlue_LOCAL_COLDSPRING_DEFAULT_PROPERTIES.modelglueXmlPath = "config/ModelGlue_#ModelGlue_APP_KEY#.xml" />
-<cfset ModelGlue_LOCAL_COLDSPRING_DEFAULT_PROPERTIES.defaultTemplate = GetFileFromPath(GetCurrentTemplatePath()) />
-
-</cfsilent><cfinclude template="/ModelGlue/gesture/ModelGlue.cfm" />
+</html>
