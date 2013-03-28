@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modelglue>
+	<event-handlers>
+		<event-handler name="home" >
+			<views>
+				<include name="content" template="home.cfm" />
+			</views>
+		</event-handler>
+		<event-handler name="getTime" >
+			<views>
+				<include name="content" template="getTime.cfm" />
+			</views>
+		</event-handler>
+	</event-handlers>
+</modelglue>
+

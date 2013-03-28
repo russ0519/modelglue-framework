@@ -1,0 +1,40 @@
+<beans>
+
+<!-- This is your Model-Glue configuration -->
+	<bean id="modelGlue.modelGlueConfiguration" class="ModelGlue.gesture.configuration.ModelGlueConfiguration">
+		<!-- Be sure to change reload to false when you go to production! -->
+		<property name="reload"><value>true</value></property>
+		<property name="debug"><value>true</value></property>
+		<property name="reloadBeanFactory"><value>false</value></property>
+		
+		<property name="generationEnabled"><value>false</value></property>
+		<property name="viewMappings">
+			<value>/modelglueapp/views/testApp</value>
+		</property>
+		<property name="configurationPath"><value>/modelglueapp/config/testApp/ModelGlue.xml</value></property>
+		<property name="defaultEvent"><value>home</value></property>
+		
+		<!-- Execute this event when the requested event is missing. Won't work if generationEnabled=true and in development mode! -->
+		<property name="missingEvent"><value>missingEvent</value></property>
+		<!-- Execute this event when an error occurs. -->
+		<property name="defaultExceptionHandler"><value>errorEvent</value></property>
+		
+		
+		<!-- Rescaffold is overridden by reload - if reload is false, rescaffold's setting doesn't matter -->
+		<property name="rescaffold"><value>false</value></property>
+		
+		
+		<property name="reloadKey"><value>init</value></property>
+		<property name="reloadPassword"><value>true</value></property>
+		
+
+		<property name="scaffoldPath"><value>/modelglueapp/config/scaffolds/Scaffolds.xml</value></property>
+		<property name="statePrecedence"><value>form</value></property>
+		<property name="eventValue"><value>event</value></property>
+		<property name="defaultTemplate"><value>/index.cfm</value></property>
+		<property name="defaultCacheTimeout"><value>5</value></property>
+		<property name="defaultScaffolds"><value>list,edit,view,commit,delete</value></property>
+	</bean>
+
+
+</beans>
